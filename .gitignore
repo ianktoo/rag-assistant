@@ -1,0 +1,9 @@
+venv/
+gradio/
+node_modules/
+*.pyc
+**pycache**
+pycache
+chroma_db/
+.cache/
+gradio/
