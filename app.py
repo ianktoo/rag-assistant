@@ -508,9 +508,9 @@ with gr.Blocks(title="Local Ollama RAG Resume Assistant", theme=theme, css="""
     # Create the main header with app title and description
     # This provides a welcoming introduction to the application
     gr.HTML(f"""
-        <div style="text-align: center; max-width: 900px; margin: 0 auto; padding: 40px 30px; background-color: #f8fafc; border-radius: 20px; border: 1px solid #e2e8f0; font-family: 'Nunito', sans-serif;">
-            <h1 style="font-size: 2.5em; color: #1e40af; font-weight: 600; margin-bottom: 20px; letter-spacing: -0.02em;">Local RAG Resume Assistant</h1>
-            <p style="color: #64748b; font-size: 1.2em; line-height: 1.6; margin: 0; font-weight: 400;">
+        <div style="text-align: center; max-width: 900px; margin: 0 auto; padding: 40px 30px; background-color: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-family: 'Nunito', sans-serif;">
+            <h2 style="font-size: 2.5em; color: #1e40af; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.02em;">Local RAG Resume Assistant</h2>
+            <p style="color: #64748b; font-size: 1.2em; line-height: 1.25; margin: 0; font-weight: 400;">
                 Powered by LangChain, Ollama ({LLM_MODEL} & {EMBEDDING_MODEL}), and ChromaDB.<br>
                 Upload your resume (PDF/DOCX) below, and then ask questions or request a professional critique.
             </p>
