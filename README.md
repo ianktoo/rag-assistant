@@ -12,7 +12,7 @@ The core goal is to enable **two** key functions:
 
 The entire interface is delivered via *Gradio*, making it runnable via a single Python script.
 
-![A screenshot of the gradio interface](./assets/image.png)
+![Poster](./assets/poster.png)
 
 ## ✨ Key Features
 
