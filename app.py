@@ -485,8 +485,24 @@ with gr.Blocks(title="Local Ollama RAG Resume Assistant", theme=theme, css="""
         padding: 20px !important;      /* Add padding for better spacing */
         border: 1px solid #e2e8f0 !important;  /* Add subtle border */
         border-radius: 12px !important;  /* Rounded corners */
-        background-color: #f8fafc !important;  /* Light background */
+        background-color: #ffffff !important;  /* White background for better contrast */
         font-size: 16px !important;    /* Larger font size for better readability */
+        color: #1f2937 !important;     /* Dark text color for visibility */
+    }
+    .critique-output h1, .critique-output h2, .critique-output h3 {
+        color: #1f2937 !important;     /* Dark color for headings */
+    }
+    .critique-output p, .critique-output li {
+        color: #374151 !important;     /* Slightly lighter dark color for body text */
+    }
+    .critique-output strong {
+        color: #1f2937 !important;     /* Dark color for bold text */
+    }
+    .critique-output * {
+        color: inherit !important;     /* Ensure all child elements inherit the dark color */
+    }
+    .critique-output span {
+        color: inherit !important;     /* Ensure spans inherit the proper color */
     }
 """) as demo:
     # Create the main header with app title and description
