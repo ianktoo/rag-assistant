@@ -6,7 +6,6 @@ from typing import List, Tuple
 # Third-party libraries
 import gradio as gr
 from unstructured.partition.auto import partition
-from pydantic import BaseModel, Field
 
 # LangChain components
 from langchain_community.document_loaders import TextLoader
@@ -33,13 +32,8 @@ vector_store = None
 llm_instance = None
 retriever = None
 
-# --- Pydantic Schema for Structured Output ---
-# This defines the JSON structure we want the LLM to return when critiquing the resume
-class ResumeCritique(BaseModel):
-    """Structured output for resume critique and suggestions."""
-    summary_of_strengths: str = Field(description="A concise summary of the resume's major strong points.")
-    key_areas_for_improvement: List[str] = Field(description="A list of 3-5 specific, actionable points for improvement (e.g., 'Quantify experience,' 'Clarify career goal.').")
-    suggested_career_path: str = Field(description="A suggestion for the most suitable career path or next job role based on the skills and experience provided.")
+# --- JSON Schema for Structured Output ---
+# The LLM will be prompted to return JSON in this format for resume critiques
 
 
 # --- RAG Pipeline Functions ---
@@ -136,18 +130,28 @@ def ingest_resume(file_path: str):
 def critique_resume():
     """Uses a structured prompt to ask the LLM for a professional critique."""
     if not retriever:
-        return "Error: Resume not loaded. Please upload a file first.", []
+        return "Error: Resume not loaded. Please upload a file first."
 
     # Get the raw text of the entire document to ensure the LLM has full context for critique
     # We retrieve all stored chunks here.
     all_chunks = vector_store.get()['documents']
     full_context = "\n\n---\n\n".join(all_chunks)
 
-    # 1. Define the System Prompt for the critique task
+    # 1. Define the System Prompt for the critique task with JSON format instructions
     CRITIQUE_PROMPT_TEMPLATE = """
     You are a world-class professional resume and career consultant.
     Your task is to analyze the provided resume text below, critique it constructively, and suggest improvements.
-    You MUST respond with a valid JSON object matching the requested schema.
+    
+    You MUST respond with a valid JSON object in exactly this format:
+    {{
+        "summary_of_strengths": "A concise summary of the resume's major strong points.",
+        "key_areas_for_improvement": [
+            "First specific, actionable improvement point",
+            "Second specific, actionable improvement point", 
+            "Third specific, actionable improvement point"
+        ],
+        "suggested_career_path": "A suggestion for the most suitable career path or next job role based on the skills and experience provided."
+    }}
 
     --- RESUME CONTEXT ---
     {context}
@@ -157,35 +161,59 @@ def critique_resume():
     critique_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", CRITIQUE_PROMPT_TEMPLATE),
-            ("human", "Analyze the resume and provide a summary of strengths, key areas for improvement, and a suggested career path. Respond ONLY with the JSON object.")
+            ("human", "Analyze the resume and provide a professional critique. Respond ONLY with the JSON object in the exact format specified above.")
         ]
     )
 
-    # 2. Create the chain for structured output
-    # Ollama uses the format instruction to trigger structured response logic
-    critique_chain = critique_prompt | llm_instance.with_structured_output(ResumeCritique)
+    # 2. Create the chain for critique generation
+    critique_chain = critique_prompt | llm_instance
     
     try:
         # 3. Invoke the chain
         print("Critique in progress...")
-        critique_result = critique_chain.invoke({"context": full_context})
+        response = critique_chain.invoke({"context": full_context})
         
-        # 4. Format the output
+        # 4. Parse the JSON response
+        import json
+        import re
+        
+        # Extract JSON from the response (in case there's extra text)
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            json_str = json_match.group()
+            critique_data = json.loads(json_str)
+        else:
+            # Fallback: try to parse the entire response as JSON
+            critique_data = json.loads(response)
+        
+        # 5. Format the output
         markdown_output = f"""
 ### 🌟 Professional Resume Critique 🌟
 
 **Summary of Strengths:**
-{critique_result.summary_of_strengths}
+{critique_data.get('summary_of_strengths', 'Not provided')}
 
 **Key Areas for Improvement:**
-{'\n'.join([f"- {item}" for item in critique_result.key_areas_for_improvement])}
+{chr(10).join([f"- {item}" for item in critique_data.get('key_areas_for_improvement', [])])}
 
 **Suggested Career Path:**
-{critique_result.suggested_career_path}
+{critique_data.get('suggested_career_path', 'Not provided')}
 """
         return markdown_output
+        
+    except json.JSONDecodeError as e:
+        # If JSON parsing fails, return the raw response with a note
+        return f"""
+### 🌟 Professional Resume Critique 🌟
+
+**Note:** The LLM response could not be parsed as structured JSON. Here's the raw response:
+
+{response}
+
+**Error:** {e}
+"""
     except Exception as e:
-        return f"Error during critique generation. Ensure LLM model supports structured output (llama3 is recommended). Error: {e}", []
+        return f"Error during critique generation. Error: {e}"
 
 
 # --- Conversation Logic (RAG Chain) ---
